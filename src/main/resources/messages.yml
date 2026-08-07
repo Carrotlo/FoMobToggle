@@ -1,0 +1,30 @@
+tokens:
+  prefix: "{theme}FoMobToggle &8» {muted}"
+  theme: "#03fc88"
+  muted: "#a7b8b0"
+  white: "#ffffff"
+  good: "#3ecf8e"
+  bad: "#ff5d73"
+
+messages:
+  player-only: "{prefix}{bad}Only players can use this command."
+  no-permission: "{prefix}{bad}You do not have permission to use this."
+  version: "{prefix}{muted}Author: {theme}{author}{muted} | Version: {theme}{version}"
+  admin-usage: "{prefix}{muted}Usage: {theme}/{label} {usage}"
+  admin-command-missing: "{prefix}{bad}Admin command is missing from plugin.yml: {theme}{command}"
+  admin-command-failed: "{prefix}{bad}Command failed. {muted}{error}"
+  reload-success: "{prefix}{good}Reloaded config, messages, and GUI."
+  reload-failed: "{prefix}{bad}Reload failed at {theme}{step}{bad}. {muted}{error}"
+  editor-opened: "{prefix}{theme}Editor opened."
+  editor-setting-saved: "{prefix}{good}Saved {theme}{setting}{good}."
+  editor-setting-failed: "{prefix}{bad}Could not save {theme}{setting}{bad}. {muted}{error}"
+  editor-invalid-radius: "{prefix}{bad}Radius must be a number from {theme}{min}{bad} to {theme}{max}{bad}."
+  gui-disabled: "{prefix}{muted}The GUI is disabled. {theme}Only permission nodes are active."
+  locked-by-permission: "{prefix}{bad}This toggle is locked by your permissions."
+  toggle-updated: "{prefix}{muted}Updated {toggle}{muted} to {state}{muted}."
+  state:
+    enabled: "{good}Enabled"
+    disabled: "{bad}Disabled"
+  permission-mode:
+    locked: "{bad}Permission override"
+    gui: "{good}GUI toggle"

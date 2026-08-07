@@ -1,0 +1,35 @@
+name: FoMobToggle
+description: Personal mob spawn toggles with permission and GUI control.
+version: '${version}'
+main: me.foesio.foMobToggle.FoMobToggle
+api-version: '1.21'
+authors: [ Carrotio ]
+
+commands:
+  fomobtoggle:
+    description: Opens the FoMobToggle menu.
+    usage: /<command>
+    aliases: [ mobtoggle, togglemob, togglemobs ]
+    permission: fomobtoggle.use
+  fomobtoggleadmin:
+    description: Manages FoMobToggle and checks for updates.
+    usage: /<command> <version|reload|editor>
+    aliases: [ mobtoggleadmin ]
+    permission: fomobtoggle.admin
+
+permissions:
+  fomobtoggle.use:
+    description: Allows the player to open the FoMobToggle GUI.
+    default: true
+  fomobtoggle.admin:
+    description: Receives FoMobToggle update notices and accesses admin features.
+    default: op
+  fomobtoggle.spawn.mob:
+    description: Final override for all mob spawning around the player.
+    default: false
+  fomobtoggle.spawn.monster:
+    description: Final override for monster spawning around the player.
+    default: false
+  fomobtoggle.spawn.passive:
+    description: Final override for passive mob spawning around the player.
+    default: false

@@ -1,0 +1,24 @@
+# Need help or want support? Join the Discord: https://discord.gg/kEF77QCfu7
+# FoMobToggle configuration
+# Messages and formatting tokens are configured in messages.yml.
+#
+# Permission behavior:
+# - If a player has an explicit fomobtoggle.spawn.* node set by your permissions plugin,
+#   that value is final and the GUI cannot change it.
+# - If the player does not have that node set, FoMobToggle uses the saved GUI toggle instead.
+#
+# GUI disabled:
+# - When gui.enabled is false, /fomobtoggle only shows a message.
+# - In that mode the plugin still blocks natural spawns by permission nodes.
+#
+# Performance:
+# - The plugin is event-driven.
+# - spawn-check-radius controls how far from a spawn location players are checked.
+# Public GUI layout is configured in guis/toggle-menu.yml.
+
+# Natural spawns are checked against nearby players only.
+# 128 matches the normal upper player-based natural spawn range well.
+spawn-check-radius: 128.0
+
+gui:
+  enabled: true

@@ -1,0 +1,37 @@
+# Public player GUI layout for /fomobtoggle.
+# Text supports the style tokens from messages.yml.
+title: "&8Mob Toggle"
+items:
+  mob:
+    slot: 11
+    material: "SPAWNER"
+    name: "{state_color}All Mobs"
+    lore:
+      - "{white}Master toggle for every mob type."
+      - "{white}Current result: {state}"
+      - "{white}Saved GUI state: {saved_state}"
+      - "{white}Mode: {permission_mode}"
+      - ""
+      - "{white}Click to switch this setting."
+  monster:
+    slot: 13
+    material: "ZOMBIE_HEAD"
+    name: "{state_color}Monsters"
+    lore:
+      - "{white}Blocks natural hostile mob spawns."
+      - "{white}Current result: {state}"
+      - "{white}Saved GUI state: {saved_state}"
+      - "{white}Mode: {permission_mode}"
+      - ""
+      - "{white}Click to switch this setting."
+  passive:
+    slot: 15
+    material: "WHEAT"
+    name: "{state_color}Passive Mobs"
+    lore:
+      - "{white}Blocks natural passive mob spawns."
+      - "{white}Current result: {state}"
+      - "{white}Saved GUI state: {saved_state}"
+      - "{white}Mode: {permission_mode}"
+      - ""
+      - "{white}Click to switch this setting."
