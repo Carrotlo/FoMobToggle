@@ -1,0 +1,25 @@
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Build output and packaged artifacts
+target/
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Runtime and local files
+run/
+*.log
+.DS_Store
+Thumbs.db
+hs_err_pid*
+dependency-reduced-pom.xml
