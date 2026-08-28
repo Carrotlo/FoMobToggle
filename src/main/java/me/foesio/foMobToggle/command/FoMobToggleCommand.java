@@ -34,12 +34,14 @@ public final class FoMobToggleCommand implements CommandExecutor, TabCompleter {
         if (!player.hasPermission("fomobtoggle.use")) {
             messages.send(player, "messages.no-permission",
                     "{prefix}{bad}You do not have permission to use this.");
+            plugin.getAdminSounds().updateError(sender);
             return true;
         }
 
         if (!plugin.getConfig().getBoolean("gui.enabled", true)) {
             messages.send(player, "messages.gui-disabled",
                     "{prefix}{muted}The GUI is disabled. {theme}Only permission nodes are active.");
+            plugin.getAdminSounds().updateError(sender);
             return true;
         }
 

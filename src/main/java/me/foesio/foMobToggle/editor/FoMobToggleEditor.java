@@ -15,6 +15,7 @@ import me.foesio.core.editor.EditorSaveResult;
 import me.foesio.core.editor.EditorSettingSaver;
 import me.foesio.core.message.FoMessageService;
 import me.foesio.core.number.LargeNumberParser;
+import me.foesio.core.sound.FoEditorSounds;
 import me.foesio.foMobToggle.FoMobToggle;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -36,6 +37,7 @@ public final class FoMobToggleEditor implements Listener {
     private final FoMobToggle plugin;
     private final FoCoreContext core;
     private final FoMessageService messages;
+    private final FoEditorSounds editorSounds;
     private final ConfigEditorMenu menu;
     private final ConfigEditorButton guiEnabledButton;
     private final ConfigEditorButton radiusButton;
@@ -45,6 +47,7 @@ public final class FoMobToggleEditor implements Listener {
         this.plugin = plugin;
         this.core = core;
         this.messages = messages;
+        this.editorSounds = plugin.getEditorSounds();
         this.guiEnabledButton = ConfigEditorButton.booleanSetting(
                 "gui-enabled",
                 "gui.enabled",
@@ -93,9 +96,21 @@ public final class FoMobToggleEditor implements Listener {
     public void open(Player player) {
         if (!player.hasPermission("fomobtoggle.admin")) {
             messages.send(player, "messages.no-permission", "{prefix}{bad}You do not have permission to use this.");
+            editorSounds.error(player);
             return;
         }
+        openMenu(player, true);
+    }
+
+    private void openSilently(Player player) {
+        openMenu(player, false);
+    }
+
+    private void openMenu(Player player, boolean playOpenSound) {
         menu.open(player);
+        if (playOpenSound) {
+            editorSounds.open(player);
+        }
     }
 
     @EventHandler
@@ -143,7 +158,12 @@ public final class FoMobToggleEditor implements Listener {
         if (button.type() == ConfigEditorValueType.BOOLEAN) {
             EditorSaveResult result = menu.toggle(button);
             sendSaveResult(player, result, button.label());
-            menu.open(player);
+            if (result.successful()) {
+                editorSounds.toggle(player, button.booleanValue());
+            } else {
+                editorSounds.error(player);
+            }
+            openSilently(player);
             return;
         }
         if (button.id().equals(radiusButton.id())) {
@@ -160,15 +180,21 @@ public final class FoMobToggleEditor implements Listener {
                 ),
                 current
         );
-        EditorDialogInputs.openTextFromInventory(
+        boolean openedNative = EditorDialogInputs.openTextFromInventory(
                 plugin,
                 core.inventoryCloseSuppressor(),
                 core.dialogService(),
                 player,
                 request,
                 value -> saveRadius(player, value),
-                () -> open(player)
+                () -> {
+                    editorSounds.back(player);
+                    openSilently(player);
+                }
         );
+        if (openedNative) {
+            editorSounds.open(player);
+        }
     }
 
     private void saveRadius(Player player, String input) {
@@ -179,7 +205,8 @@ public final class FoMobToggleEditor implements Listener {
             messages.send(player, "messages.editor-invalid-radius",
                     "{prefix}{bad}Radius must be a number from {theme}{min}{bad} to {theme}{max}{bad}.",
                     Map.of("min", formatRadius(MIN_RADIUS), "max", formatRadius(MAX_RADIUS)));
-            open(player);
+            editorSounds.error(player);
+            openSilently(player);
             return;
         }
 
@@ -188,13 +215,19 @@ public final class FoMobToggleEditor implements Listener {
             messages.send(player, "messages.editor-invalid-radius",
                     "{prefix}{bad}Radius must be a finite number from {theme}{min}{bad} to {theme}{max}{bad}.",
                     Map.of("min", formatRadius(MIN_RADIUS), "max", formatRadius(MAX_RADIUS)));
-            open(player);
+            editorSounds.error(player);
+            openSilently(player);
             return;
         }
 
         EditorSaveResult result = settingSaver.save(RADIUS_PATH, radius);
         sendSaveResult(player, result, "Spawn Check Radius");
-        open(player);
+        if (result.successful()) {
+            editorSounds.save(player);
+        } else {
+            editorSounds.error(player);
+        }
+        openSilently(player);
     }
 
     private void sendSaveResult(Player player, EditorSaveResult result, String setting) {

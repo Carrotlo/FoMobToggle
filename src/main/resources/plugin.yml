@@ -10,12 +10,10 @@ commands:
     description: Opens the FoMobToggle menu.
     usage: /<command>
     aliases: [ mobtoggle, togglemob, togglemobs ]
-    permission: fomobtoggle.use
   fomobtoggleadmin:
     description: Manages FoMobToggle and checks for updates.
     usage: /<command> <version|reload|editor>
     aliases: [ mobtoggleadmin ]
-    permission: fomobtoggle.admin
 
 permissions:
   fomobtoggle.use:

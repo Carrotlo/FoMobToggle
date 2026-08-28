@@ -60,6 +60,7 @@ public final class ToggleMenu {
         for (ToggleCategory category : ToggleCategory.values()) {
             inventory.setItem(category.getSlot(guiConfig), createToggleItem(player, category));
         }
+        plugin.getGuiSounds().open(player);
         player.openInventory(inventory);
     }
 
@@ -98,6 +99,7 @@ public final class ToggleMenu {
         if (player.isPermissionSet(category.getPermission())) {
             messages.send(player, "messages.locked-by-permission",
                     "{prefix}{bad}This toggle is locked by your permissions.");
+            plugin.getGuiSounds().error(player);
             return;
         }
 
@@ -116,6 +118,11 @@ public final class ToggleMenu {
         messages.send(player, "messages.toggle-updated",
                 "{prefix}{muted}Updated {toggle}{muted} to {state}{muted}.",
                 Map.of("toggle", toggle, "state", state));
+        plugin.getSounds().playWithPitchVariation(
+                player,
+                newValue ? "mob-toggle.enabled" : "mob-toggle.disabled",
+                0.04f
+        );
     }
 
     private void fillBackground(Inventory inventory) {

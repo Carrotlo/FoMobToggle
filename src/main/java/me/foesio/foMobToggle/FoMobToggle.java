@@ -16,6 +16,10 @@ import me.foesio.core.message.FoMessageMigrations;
 import me.foesio.core.message.FoMessageService;
 import me.foesio.core.reload.FoReloadRegistry;
 import me.foesio.core.reload.FoReloadResult;
+import me.foesio.core.sound.FoAdminSounds;
+import me.foesio.core.sound.FoEditorSounds;
+import me.foesio.core.sound.FoGuiSounds;
+import me.foesio.core.sound.FoSoundService;
 import me.foesio.core.update.UpdateNoticeService;
 import me.foesio.foMobToggle.command.FoMobToggleCommand;
 import me.foesio.foMobToggle.data.PlayerSettingsManager;
@@ -40,6 +44,10 @@ public final class FoMobToggle extends JavaPlugin {
     private FoMessageService messages;
     private SpawnPolicyService spawnPolicyService;
     private FoCoreContext core;
+    private FoSoundService sounds;
+    private FoAdminSounds adminSounds;
+    private FoEditorSounds editorSounds;
+    private FoGuiSounds guiSounds;
     private UpdateNoticeService updateNotices;
     private FoReloadRegistry reloads;
     private CommandVisibilityService commandVisibility;
@@ -53,6 +61,10 @@ public final class FoMobToggle extends JavaPlugin {
         File userDataFolder = new File(getDataFolder(), "userdata");
 
         this.core = FoPluginCore.create(this);
+        this.sounds = core.createSounds();
+        this.adminSounds = FoAdminSounds.create(sounds);
+        this.editorSounds = FoEditorSounds.create(sounds);
+        this.guiSounds = FoGuiSounds.create(sounds);
         if (core.nativeDialogs().warnOnFallback()) {
             core.warnIfNativeDialogsUnavailable();
         }
@@ -63,7 +75,7 @@ public final class FoMobToggle extends JavaPlugin {
         migrateLegacyGuiConfig(guiFileExisted, guiFile);
         boolean messagesFileExisted = new File(getDataFolder(), "messages.yml").isFile();
         this.messages = FoMessageService.load(this, messageMigrations(messagesFileExisted));
-        this.updateNotices = core.createUpdateNotices(messages, "fomobtoggle").start();
+        this.updateNotices = core.createUpdateNotices(messages, "fomobtoggle", adminSounds).start();
         this.playerSettingsManager = new PlayerSettingsManager(this, userDataFolder, core);
         this.spawnPolicyService = new SpawnPolicyService(this, playerSettingsManager);
         this.toggleMenu = new ToggleMenu(this, messages, playerSettingsManager, spawnPolicyService, guiFile);
@@ -71,12 +83,14 @@ public final class FoMobToggle extends JavaPlugin {
         this.reloads = FoReloadRegistry.create()
                 .addConfig(this)
                 .addMessages(messages)
+                .add("sounds", sounds::reload)
                 .add("guis", toggleMenu::reloadConfig);
 
         FoAdminCommand.builder(this, messages)
                 .updates(updateNotices)
                 .reloads(reloads)
                 .editor(editor::open)
+                .adminSounds(adminSounds)
                 .versionCommand(false)
                 .addSubcommand(FoAdminSubcommand.builder("version", context -> {
                     messages.send(context.sender(), "messages.version",
@@ -129,6 +143,22 @@ public final class FoMobToggle extends JavaPlugin {
 
     public FoMessageService getMessageService() {
         return messages;
+    }
+
+    public FoGuiSounds getGuiSounds() {
+        return guiSounds;
+    }
+
+    public FoEditorSounds getEditorSounds() {
+        return editorSounds;
+    }
+
+    public FoSoundService getSounds() {
+        return sounds;
+    }
+
+    public FoAdminSounds getAdminSounds() {
+        return adminSounds;
     }
 
     public FoReloadResult reloadPluginData() {
