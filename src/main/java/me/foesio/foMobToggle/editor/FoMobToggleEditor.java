@@ -35,7 +35,7 @@ public final class FoMobToggleEditor implements Listener {
     private static final double MAX_RADIUS = 512.0D;
 
     private final FoMobToggle plugin;
-    private final FoCoreContext core;
+    private volatile FoCoreContext core;
     private final FoMessageService messages;
     private final FoEditorSounds editorSounds;
     private final ConfigEditorMenu menu;
@@ -93,6 +93,10 @@ public final class FoMobToggleEditor implements Listener {
                 .build();
     }
 
+    public void setCore(FoCoreContext core) {
+        this.core = core;
+    }
+
     public void open(Player player) {
         if (!player.hasPermission("fomobtoggle.admin")) {
             messages.send(player, "messages.no-permission", "{prefix}{bad}You do not have permission to use this.");
@@ -107,7 +111,7 @@ public final class FoMobToggleEditor implements Listener {
     }
 
     private void openMenu(Player player, boolean playOpenSound) {
-        menu.open(player);
+        player.openInventory(menu.open(player));
         if (playOpenSound) {
             editorSounds.open(player);
         }

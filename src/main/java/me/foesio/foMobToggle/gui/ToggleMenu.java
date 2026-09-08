@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import me.foesio.core.editor.EditorItemFactory;
 import me.foesio.core.gui.GuiItems;
+import me.foesio.core.gui.GuiItemConfig;
 import me.foesio.core.gui.GuiSlots;
 import me.foesio.core.gui.GuiTitles;
 import me.foesio.core.message.FoMessageService;
@@ -56,7 +57,7 @@ public final class ToggleMenu {
         Inventory inventory = Bukkit.createInventory(new ToggleMenuHolder(), SIZE,
                 GuiTitles.format(messages.renderTemplate(guiConfig.getString("title", "&8Mob Toggle"))));
 
-        fillBackground(inventory);
+        fillBackground(player, inventory);
         for (ToggleCategory category : ToggleCategory.values()) {
             inventory.setItem(category.getSlot(guiConfig), createToggleItem(player, category));
         }
@@ -125,9 +126,23 @@ public final class ToggleMenu {
         );
     }
 
-    private void fillBackground(Inventory inventory) {
+    private void fillBackground(Player player, Inventory inventory) {
+        ConfigurationSection fillerSection = guiConfig.getConfigurationSection("filler");
+        Material fillerMaterial = fillerSection == null ? Material.GRAY_STAINED_GLASS_PANE
+                : Material.matchMaterial(fillerSection.getString("material", "GRAY_STAINED_GLASS_PANE"));
+        if (fillerMaterial == null || !fillerMaterial.isItem()) {
+            fillerMaterial = Material.GRAY_STAINED_GLASS_PANE;
+        }
+        String fillerName = fillerSection == null ? " " : fillerSection.getString("name", " ");
+        List<String> fillerLore = fillerSection == null ? List.of() : fillerSection.getStringList("lore");
+        Integer fillerModel = fillerSection == null ? null
+                : GuiItemConfig.parseCustomModelData(fillerSection.get("custom-model-data"), null);
+        ItemStack filler = GuiItems.create(player, fillerMaterial,
+                messages.renderTemplateForViewer(player, fillerName, Map.of()),
+                fillerLore.stream().map(line -> messages.renderTemplateForViewer(player, line, Map.of())).toList(),
+                false, 1, fillerModel);
         for (int slot = 0; slot < SIZE; slot++) {
-            inventory.setItem(slot, EditorItemFactory.filler());
+            inventory.setItem(slot, filler.clone());
         }
     }
 
@@ -144,29 +159,32 @@ public final class ToggleMenu {
         }
 
         String statePath = effectiveEnabled ? "messages.state.enabled" : "messages.state.disabled";
-        String displayName = messages.renderTemplate(category.getDisplayName(guiConfig)
-                .replace("{state_color}", effectiveEnabled
-                        ? "{good}" : "{bad}"));
+        String displayTemplate = category.getDisplayName(guiConfig)
+                .replace("{state_color}", effectiveEnabled ? "{good}" : "{bad}");
+        String displayName = messages.renderTemplateForViewer(player, displayTemplate, Map.of());
 
         List<String> lore = new ArrayList<>();
         ConfigurationSection section = guiConfig.getConfigurationSection("items." + category.getConfigKey());
         if (section != null) {
-            String stateText = messages.render(statePath,
-                    effectiveEnabled ? "{good}Enabled" : "{bad}Disabled");
-            String savedStateText = messages.render(
-                    savedEnabled ? "messages.state.enabled" : "messages.state.disabled",
-                    savedEnabled ? "{good}Enabled" : "{bad}Disabled");
-            String permissionModeText = messages.render(
-                    locked ? "messages.permission-mode.locked" : "messages.permission-mode.gui",
-                    locked ? "{bad}Permission override" : "{good}GUI toggle");
+            String stateText = messages.renderTemplateForViewer(player,
+                    messages.config().getString(statePath,
+                            effectiveEnabled ? "{good}Enabled" : "{bad}Disabled"), Map.of());
+            String savedStateText = messages.renderTemplateForViewer(player,
+                    messages.config().getString(savedEnabled ? "messages.state.enabled" : "messages.state.disabled",
+                            savedEnabled ? "{good}Enabled" : "{bad}Disabled"), Map.of());
+            String permissionModeText = messages.renderTemplateForViewer(player,
+                    messages.config().getString(locked ? "messages.permission-mode.locked" : "messages.permission-mode.gui",
+                            locked ? "{bad}Permission override" : "{good}GUI toggle"), Map.of());
             for (String line : section.getStringList("lore")) {
-                lore.add(messages.renderTemplate(line
+                lore.add(messages.renderTemplateForViewer(player, line
                         .replace("{state}", stateText)
                         .replace("{saved_state}", savedStateText)
-                        .replace("{permission_mode}", permissionModeText)));
+                        .replace("{permission_mode}", permissionModeText), Map.of()));
             }
         }
-        return GuiItems.create(material, displayName, lore);
+        Integer customModelData = section == null ? null
+                : GuiItemConfig.parseCustomModelData(section.get("custom-model-data"), null);
+        return GuiItems.create(player, material, displayName, lore, false, 1, customModelData);
     }
 
 }

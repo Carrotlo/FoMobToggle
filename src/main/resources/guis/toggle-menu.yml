@@ -1,37 +1,54 @@
 # Public player GUI layout for /fomobtoggle.
 # Text supports the style tokens from messages.yml.
-title: "&8Mob Toggle"
+title: "&8ᴍᴏʙ ᴛᴏɢɢʟᴇ"
+filler:
+  material: GRAY_STAINED_GLASS_PANE
+  custom-model-data: ''
+  name: ' '
+  lore: []
 items:
   mob:
     slot: 11
     material: "SPAWNER"
-    name: "{state_color}All Mobs"
+    custom-model-data: ''
+    name: ":spawner: {state_color}&lALL MOBS"
     lore:
-      - "{white}Master toggle for every mob type."
-      - "{white}Current result: {state}"
-      - "{white}Saved GUI state: {saved_state}"
-      - "{white}Mode: {permission_mode}"
-      - ""
-      - "{white}Click to switch this setting."
+      - "&8ʙᴜᴛᴛᴏɴ"
+      - " "
+      - "&eⓘ Information ↓"
+      - "&7&l | &fMaster toggle for every mob type."
+      - "&7&l | &fCurrent result: {state}"
+      - "&7&l | &fSaved GUI state: {saved_state}"
+      - "&7&l | &fMode: {permission_mode}"
+      - " "
+      - "{good}→ Click to Toggle ←"
   monster:
     slot: 13
     material: "ZOMBIE_HEAD"
-    name: "{state_color}Monsters"
+    custom-model-data: ''
+    name: ":zombie_head: {state_color}&lMONSTERS"
     lore:
-      - "{white}Blocks natural hostile mob spawns."
-      - "{white}Current result: {state}"
-      - "{white}Saved GUI state: {saved_state}"
-      - "{white}Mode: {permission_mode}"
-      - ""
-      - "{white}Click to switch this setting."
+      - "&8ʙᴜᴛᴛᴏɴ"
+      - " "
+      - "&eⓘ Information ↓"
+      - "&7&l | &fBlocks natural hostile mob spawns."
+      - "&7&l | &fCurrent result: {state}"
+      - "&7&l | &fSaved GUI state: {saved_state}"
+      - "&7&l | &fMode: {permission_mode}"
+      - " "
+      - "{good}→ Click to Toggle ←"
   passive:
     slot: 15
     material: "WHEAT"
-    name: "{state_color}Passive Mobs"
+    custom-model-data: ''
+    name: ":wheat: {state_color}&lPASSIVE MOBS"
     lore:
-      - "{white}Blocks natural passive mob spawns."
-      - "{white}Current result: {state}"
-      - "{white}Saved GUI state: {saved_state}"
-      - "{white}Mode: {permission_mode}"
-      - ""
-      - "{white}Click to switch this setting."
+      - "&8ʙᴜᴛᴛᴏɴ"
+      - " "
+      - "&eⓘ Information ↓"
+      - "&7&l | &fBlocks natural passive mob spawns."
+      - "&7&l | &fCurrent result: {state}"
+      - "&7&l | &fSaved GUI state: {saved_state}"
+      - "&7&l | &fMode: {permission_mode}"
+      - " "
+      - "{good}→ Click to Toggle ←"

@@ -2,7 +2,6 @@ package me.foesio.foMobToggle;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
 import me.foesio.core.FoCoreContext;
 import me.foesio.core.FoPluginCore;
@@ -48,6 +47,7 @@ public final class FoMobToggle extends JavaPlugin {
     private FoAdminSounds adminSounds;
     private FoEditorSounds editorSounds;
     private FoGuiSounds guiSounds;
+    private FoMobToggleEditor editor;
     private UpdateNoticeService updateNotices;
     private FoReloadRegistry reloads;
     private CommandVisibilityService commandVisibility;
@@ -75,16 +75,18 @@ public final class FoMobToggle extends JavaPlugin {
         migrateLegacyGuiConfig(guiFileExisted, guiFile);
         boolean messagesFileExisted = new File(getDataFolder(), "messages.yml").isFile();
         this.messages = FoMessageService.load(this, messageMigrations(messagesFileExisted));
+        migrateSprites();
         this.updateNotices = core.createUpdateNotices(messages, "fomobtoggle", adminSounds).start();
         this.playerSettingsManager = new PlayerSettingsManager(this, userDataFolder, core);
         this.spawnPolicyService = new SpawnPolicyService(this, playerSettingsManager);
         this.toggleMenu = new ToggleMenu(this, messages, playerSettingsManager, spawnPolicyService, guiFile);
-        FoMobToggleEditor editor = new FoMobToggleEditor(this, core, messages);
+        this.editor = new FoMobToggleEditor(this, core, messages);
         this.reloads = FoReloadRegistry.create()
                 .addConfig(this)
                 .addMessages(messages)
                 .add("sounds", sounds::reload)
-                .add("guis", toggleMenu::reloadConfig);
+                .add("guis", toggleMenu::reloadConfig)
+                .add("core", this::reloadCoreContext);
 
         FoAdminCommand.builder(this, messages)
                 .updates(updateNotices)
@@ -93,10 +95,7 @@ public final class FoMobToggle extends JavaPlugin {
                 .adminSounds(adminSounds)
                 .versionCommand(false)
                 .addSubcommand(FoAdminSubcommand.builder("version", context -> {
-                    messages.send(context.sender(), "messages.version",
-                            "{prefix}{muted}Author: {theme}Carrotio{muted} | Version: {theme}{version}",
-                            Map.of("author", "Carrotio", "version", getDescription().getVersion()));
-                    updateNotices.sendVersion(context.sender());
+                    updateNotices.checkAndSendVersion(context.sender());
                     return true;
                 }).usage("version").build())
                 .adminMessages(FoAdminMessages.builder()
@@ -165,6 +164,20 @@ public final class FoMobToggle extends JavaPlugin {
         return reloads.reload();
     }
 
+    private void reloadCoreContext() {
+        FoCoreContext previous = core;
+        if (previous != null) {
+            previous.close();
+        }
+        core = FoPluginCore.create(this);
+        core.metrics(BSTATS_PLUGIN_ID)
+                .togglePie("gui_enabled", () -> getConfig().getBoolean("gui.enabled", true));
+        core.warnIfNativeDialogsUnavailable();
+        if (editor != null) {
+            editor.setCore(core);
+        }
+    }
+
     private FoMessageMigrations messageMigrations(boolean messagesFileExisted) {
         if (messagesFileExisted) {
             return FoMessageMigrations.none();
@@ -185,6 +198,19 @@ public final class FoMobToggle extends JavaPlugin {
                     return true;
                 })
                 .build();
+    }
+
+    private void migrateSprites() {
+        messages.migrateToVersion(core.migrations(), 1, config -> {
+            boolean changed = false;
+            changed |= FoMessageService.addMissingToken(config, "tokens.prefix", ":zombie_spawn_egg:", null);
+            changed |= FoMessageService.addMissingToken(config, "messages.reload-success", ":emerald:");
+            changed |= FoMessageService.addMissingToken(config, "messages.reload-failed", ":redstone:");
+            changed |= FoMessageService.addMissingToken(config, "messages.editor-opened", ":book:");
+            changed |= FoMessageService.addMissingToken(config, "messages.editor-setting-saved", ":emerald:");
+            changed |= FoMessageService.addMissingToken(config, "messages.editor-setting-failed", ":redstone:");
+            return changed;
+        });
     }
 
     private void migrateLegacyGuiConfig(boolean guiFileExisted, File guiFile) {
