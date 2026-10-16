@@ -1,54 +1,72 @@
-# Public player GUI layout for /fomobtoggle.
-# Text supports the style tokens from messages.yml.
 title: "&8ᴍᴏʙ ᴛᴏɢɢʟᴇ"
+rows: 3
 filler:
-  material: GRAY_STAINED_GLASS_PANE
-  custom-model-data: ''
-  name: ' '
+  enabled: true
+  material: "GRAY_STAINED_GLASS_PANE"
+  amount: 1
+  item-flags:
+    - "HIDE_ATTRIBUTES"
+    - "HIDE_ENCHANTS"
+  name: " "
   lore: []
-items:
+buttons:
   mob:
+    enabled: true
     slot: 11
+    amount: 1
+    item-flags:
+      - "HIDE_ATTRIBUTES"
+      - "HIDE_ENCHANTS"
     material: "SPAWNER"
-    custom-model-data: ''
-    name: ":spawner: {state_color}&lALL MOBS"
+    name: ":spawner: {mob_state_color}&lALL MOBS"
     lore:
       - "&8ʙᴜᴛᴛᴏɴ"
       - " "
       - "&eⓘ Information ↓"
       - "&7&l | &fMaster toggle for every mob type."
-      - "&7&l | &fCurrent result: {state}"
-      - "&7&l | &fSaved GUI state: {saved_state}"
-      - "&7&l | &fMode: {permission_mode}"
+      - "&7&l | &fCurrent result: {mob_state}"
+      - "&7&l | &fSaved GUI state: {mob_saved_state}"
+      - "&7&l | &fMode: {mob_permission_mode}"
       - " "
-      - "{good}→ Click to Toggle ←"
+      - "{gui_good}→ Click to Toggle ←"
+    action: "toggle.mob"
   monster:
+    enabled: true
     slot: 13
+    amount: 1
+    item-flags:
+      - "HIDE_ATTRIBUTES"
+      - "HIDE_ENCHANTS"
     material: "ZOMBIE_HEAD"
-    custom-model-data: ''
-    name: ":zombie_head: {state_color}&lMONSTERS"
+    name: ":zombie_spawn_egg: {monster_state_color}&lMONSTERS"
     lore:
       - "&8ʙᴜᴛᴛᴏɴ"
       - " "
       - "&eⓘ Information ↓"
       - "&7&l | &fBlocks natural hostile mob spawns."
-      - "&7&l | &fCurrent result: {state}"
-      - "&7&l | &fSaved GUI state: {saved_state}"
-      - "&7&l | &fMode: {permission_mode}"
+      - "&7&l | &fCurrent result: {monster_state}"
+      - "&7&l | &fSaved GUI state: {monster_saved_state}"
+      - "&7&l | &fMode: {monster_permission_mode}"
       - " "
-      - "{good}→ Click to Toggle ←"
+      - "{gui_good}→ Click to Toggle ←"
+    action: "toggle.monster"
   passive:
+    enabled: true
     slot: 15
+    amount: 1
+    item-flags:
+      - "HIDE_ATTRIBUTES"
+      - "HIDE_ENCHANTS"
     material: "WHEAT"
-    custom-model-data: ''
-    name: ":wheat: {state_color}&lPASSIVE MOBS"
+    name: ":wheat: {passive_state_color}&lPASSIVE MOBS"
     lore:
       - "&8ʙᴜᴛᴛᴏɴ"
       - " "
       - "&eⓘ Information ↓"
       - "&7&l | &fBlocks natural passive mob spawns."
-      - "&7&l | &fCurrent result: {state}"
-      - "&7&l | &fSaved GUI state: {saved_state}"
-      - "&7&l | &fMode: {permission_mode}"
+      - "&7&l | &fCurrent result: {passive_state}"
+      - "&7&l | &fSaved GUI state: {passive_saved_state}"
+      - "&7&l | &fMode: {passive_permission_mode}"
       - " "
-      - "{good}→ Click to Toggle ←"
+      - "{gui_good}→ Click to Toggle ←"
+    action: "toggle.passive"

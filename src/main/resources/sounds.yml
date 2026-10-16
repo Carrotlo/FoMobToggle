@@ -146,6 +146,7 @@ mob-toggle.enabled:
   category: PLAYERS
   volume: 0.9
   pitch: 1.4
+  pitch-variation: 0.04
 
 mob-toggle.disabled:
   enabled: true
@@ -153,3 +154,4 @@ mob-toggle.disabled:
   category: PLAYERS
   volume: 0.8
   pitch: 0.75
+  pitch-variation: 0.04

@@ -2,8 +2,8 @@ package me.foesio.foMobToggle.command;
 
 import java.util.Collections;
 import java.util.List;
-import me.foesio.core.message.FoMessageService;
 import me.foesio.foMobToggle.FoMobToggle;
+import me.foesio.foMobToggle.gui.PublicPresentation;
 import me.foesio.foMobToggle.gui.ToggleMenu;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -15,33 +15,36 @@ public final class FoMobToggleCommand implements CommandExecutor, TabCompleter {
 
     private final FoMobToggle plugin;
     private final ToggleMenu toggleMenu;
-    private final FoMessageService messages;
+    private final PublicPresentation presentation;
 
-    public FoMobToggleCommand(FoMobToggle plugin, ToggleMenu toggleMenu, FoMessageService messages) {
+    public FoMobToggleCommand(FoMobToggle plugin, ToggleMenu toggleMenu, PublicPresentation presentation) {
         this.plugin = plugin;
         this.toggleMenu = toggleMenu;
-        this.messages = messages;
+        this.presentation = presentation;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            messages.send(sender, "messages.player-only",
-                    "{prefix}{bad}Only players can use this command.");
+            presentation.send(sender, "messages.player-only");
             return true;
         }
 
         if (!player.hasPermission("fomobtoggle.use")) {
-            messages.send(player, "messages.no-permission",
-                    "{prefix}{bad}You do not have permission to use this.");
-            plugin.getAdminSounds().updateError(sender);
+            presentation.send(player, "messages.no-permission");
+            presentation.play(player, "gui.error");
             return true;
         }
 
         if (!plugin.getConfig().getBoolean("gui.enabled", true)) {
-            messages.send(player, "messages.gui-disabled",
-                    "{prefix}{muted}The GUI is disabled. {theme}Only permission nodes are active.");
-            plugin.getAdminSounds().updateError(sender);
+            presentation.send(player, "messages.gui-disabled");
+            presentation.play(player, "gui.error");
+            return true;
+        }
+
+        if (!toggleMenu.isAvailable()) {
+            presentation.send(player, "messages.gui-unavailable");
+            presentation.play(player, "gui.error");
             return true;
         }
 

@@ -21,11 +21,16 @@ messages:
   editor-setting-failed: "{prefix}:redstone: {bad}Could not save {theme}{setting}{bad}. {muted}{error}"
   editor-invalid-radius: "{prefix}{bad}Radius must be a number from {theme}{min}{bad} to {theme}{max}{bad}."
   gui-disabled: "{prefix}{muted}The GUI is disabled. {theme}Only permission nodes are active."
+  gui-unavailable: "{prefix}{bad}The mob toggle menu is unavailable."
   locked-by-permission: "{prefix}{bad}This toggle is locked by your permissions."
   toggle-updated: "{prefix}{muted}Updated {toggle}{muted} to {state}{muted}."
   state:
     enabled: "{good}Enabled"
     disabled: "{bad}Disabled"
-  permission-mode:
-    locked: "{bad}Permission override"
-    gui: "{good}GUI toggle"
+  gui-labels:
+    state:
+      enabled: "{good}Enabled"
+      disabled: "{bad}Disabled"
+    permission-mode:
+      locked: "{bad}Permission override"
+      gui: "{good}GUI toggle"

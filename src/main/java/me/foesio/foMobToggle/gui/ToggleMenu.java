@@ -1,190 +1,162 @@
 package me.foesio.foMobToggle.gui;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import me.foesio.core.editor.EditorItemFactory;
-import me.foesio.core.gui.GuiItems;
-import me.foesio.core.gui.GuiItemConfig;
-import me.foesio.core.gui.GuiSlots;
-import me.foesio.core.gui.GuiTitles;
-import me.foesio.core.message.FoMessageService;
+import me.foesio.core.gui.publicgui.GuiDefinitionException;
+import me.foesio.core.gui.publicgui.GuiLoadReport;
+import me.foesio.core.gui.publicgui.PublicGuiContract;
+import me.foesio.core.gui.publicgui.PublicGuiDefinition;
+import me.foesio.core.gui.publicgui.PublicGuiRenderInput;
+import me.foesio.core.gui.publicgui.PublicGuiService;
+import me.foesio.core.gui.publicgui.PublicGuiText;
 import me.foesio.foMobToggle.FoMobToggle;
 import me.foesio.foMobToggle.data.PlayerSettings;
 import me.foesio.foMobToggle.data.PlayerSettingsManager;
 import me.foesio.foMobToggle.model.ToggleCategory;
 import me.foesio.foMobToggle.service.SpawnPolicyService;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 
-public final class ToggleMenu {
+/** Public menu: Core owns loading, rendering, inventory holders, and click routing. */
+public final class ToggleMenu implements AutoCloseable {
 
-    private static final int ROWS = 3;
-    private static final int SIZE = GuiSlots.sizeForRows(ROWS);
+    private static final String MENU_ID = "fomobtoggle.main";
+    private static final String ENTRY_POINT = "command:/fomobtoggle";
+    static final Set<String> PLACEHOLDERS = Set.of(
+            "gui_theme", "gui_muted", "gui_white", "gui_yellow", "gui_good", "gui_bad",
+            "mob_state_color", "mob_state", "mob_saved_state", "mob_permission_mode",
+            "monster_state_color", "monster_state", "monster_saved_state", "monster_permission_mode",
+            "passive_state_color", "passive_state", "passive_saved_state", "passive_permission_mode");
+    private static final PublicGuiContract CONTRACT = new PublicGuiContract(
+            Set.of("toggle.mob", "toggle.monster", "toggle.passive"), Map.of(),
+            PLACEHOLDERS, PublicGuiContract.InteractionMode.CORE);
 
-    private final FoMobToggle plugin;
-    private final FoMessageService messages;
+    private final PublicPresentation presentation;
     private final PlayerSettingsManager playerSettingsManager;
     private final SpawnPolicyService spawnPolicyService;
-    private final File guiFile;
-    private FileConfiguration guiConfig;
+    private final PublicGuiService guis;
+    private final boolean migrationReady;
 
-    public ToggleMenu(
-            FoMobToggle plugin,
-            FoMessageService messages,
-            PlayerSettingsManager playerSettingsManager,
-            SpawnPolicyService spawnPolicyService,
-            File guiFile
-    ) {
-        this.plugin = plugin;
-        this.messages = messages;
+    public ToggleMenu(FoMobToggle plugin, PublicPresentation presentation,
+                      PlayerSettingsManager playerSettingsManager, SpawnPolicyService spawnPolicyService,
+                      File guiFile, boolean migrationReady) {
+        this.presentation = presentation;
         this.playerSettingsManager = playerSettingsManager;
         this.spawnPolicyService = spawnPolicyService;
-        this.guiFile = guiFile;
-        reloadConfig();
+        this.migrationReady = migrationReady;
+        this.guis = new PublicGuiService(plugin)
+                .menu(MENU_ID, guiFile.toPath(), CONTRACT)
+                .action("toggle.mob", click -> toggle(click.player(), ToggleCategory.ALL_MOBS))
+                .action("toggle.monster", click -> toggle(click.player(), ToggleCategory.MONSTERS))
+                .action("toggle.passive", click -> toggle(click.player(), ToggleCategory.PASSIVE))
+                .entryPoint(ENTRY_POINT, MENU_ID)
+                .entryPoint("command:/mobtoggle", MENU_ID)
+                .entryPoint("command:/togglemob", MENU_ID)
+                .entryPoint("command:/togglemobs", MENU_ID);
+        guis.start();
+        if (migrationReady) {
+            try {
+                reloadConfig();
+            } catch (IllegalStateException exception) {
+                plugin.getLogger().warning(exception.getMessage() + "; the public menu is suppressed.");
+            }
+        }
+    }
+
+    public boolean isAvailable() {
+        return migrationReady && guis.snapshot() != null;
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new ToggleMenuHolder(), SIZE,
-                GuiTitles.format(messages.renderTemplate(guiConfig.getString("title", "&8Mob Toggle"))));
-
-        fillBackground(player, inventory);
-        for (ToggleCategory category : ToggleCategory.values()) {
-            inventory.setItem(category.getSlot(guiConfig), createToggleItem(player, category));
+        if (!isAvailable()) {
+            presentation.send(player, "messages.gui-unavailable");
+            return;
         }
-        plugin.getGuiSounds().open(player);
-        player.openInventory(inventory);
+        guis.openEntryPoint(player, ENTRY_POINT, renderInput(player));
+        presentation.play(player, "gui.open");
     }
 
     public void reloadConfig() {
-        guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-        Set<Integer> usedSlots = new HashSet<>();
-        for (ToggleCategory category : ToggleCategory.values()) {
-            String materialPath = "items." + category.getConfigKey() + ".material";
-            String materialName = guiConfig.getString(materialPath, category.getDefaultMaterial());
-            Material material = Material.matchMaterial(materialName);
-            if (material == null || !material.isItem()) {
-                plugin.getLogger().warning("Invalid GUI material '" + materialName + "' at "
-                        + materialPath + "; using LEVER.");
-            }
-            if (category.hasInvalidSlot(guiConfig)) {
-                plugin.getLogger().warning("Invalid GUI slot at items." + category.getConfigKey()
-                        + ".slot; using " + category.getDefaultSlot() + ".");
-            }
-            if (!usedSlots.add(category.getSlot(guiConfig))) {
-                plugin.getLogger().warning("Duplicate GUI slot for " + category.getConfigKey()
-                        + "; category items may overlap.");
-            }
+        if (!migrationReady) {
+            throw new IllegalStateException("The public GUI migration is pending; restart after correcting the logged error");
+        }
+        GuiLoadReport report = guis.reload();
+        if (!report.successful()) {
+            throw new IllegalStateException("Public GUI reload failed: " + report.diagnostics().size()
+                    + " error(s); " + (report.activeRevision() == 0
+                    ? "no menu is active" : "the previous working menu remains active")
+                    + ". Check the server log for file and key details");
         }
     }
 
-    public boolean isMenu(Inventory inventory) {
-        return inventory.getHolder() instanceof ToggleMenuHolder;
+    public static void validateMigrated(YamlConfiguration yaml) throws GuiDefinitionException {
+        me.foesio.core.gui.publicgui.PublicGuiSchema.parse(
+                MENU_ID, "guis/toggle-menu.yml", yaml, CONTRACT);
     }
 
-    public void handleClick(Player player, int slot) {
-        ToggleCategory category = ToggleCategory.fromSlot(slot, guiConfig);
-        if (category == null) {
-            return;
-        }
-
+    private void toggle(Player player, ToggleCategory category) {
         if (player.isPermissionSet(category.getPermission())) {
-            messages.send(player, "messages.locked-by-permission",
-                    "{prefix}{bad}This toggle is locked by your permissions.");
-            plugin.getGuiSounds().error(player);
+            presentation.send(player, "messages.locked-by-permission");
+            presentation.play(player, "gui.error");
             return;
         }
-
         PlayerSettings settings = playerSettingsManager.get(player.getUniqueId());
         boolean newValue = !settings.isEnabled(category);
         playerSettingsManager.set(player.getUniqueId(), category, newValue);
-
-        Inventory topInventory = player.getOpenInventory().getTopInventory();
-        topInventory.setItem(category.getSlot(guiConfig), createToggleItem(player, category));
-
-        String toggle = messages.renderTemplate(category.getDisplayName(guiConfig)
-                .replace("{state_color}", "{theme}"));
-        String state = messages.render(
-                newValue ? "messages.state.enabled" : "messages.state.disabled",
-                newValue ? "{good}Enabled" : "{bad}Disabled");
-        messages.send(player, "messages.toggle-updated",
-                "{prefix}{muted}Updated {toggle}{muted} to {state}{muted}.",
-                Map.of("toggle", toggle, "state", state));
-        plugin.getSounds().playWithPitchVariation(
-                player,
-                newValue ? "mob-toggle.enabled" : "mob-toggle.disabled",
-                0.04f
-        );
+        PublicGuiRenderInput input = renderInput(player);
+        guis.openEntryPoint(player, ENTRY_POINT, input);
+        PublicGuiDefinition.Button button = guis.snapshot().require(MENU_ID).buttons().get(category.getConfigKey());
+        String name = button == null || button.item() == null || button.item().name() == null ? ""
+                : PublicGuiText.scalar(button.item().name(), input.placeholders(),
+                        "buttons." + category.getConfigKey() + ".name");
+        String state = presentation.render(newValue ? "messages.state.enabled" : "messages.state.disabled");
+        presentation.send(player, "messages.toggle-updated", Map.of("toggle", name, "state", state));
+        presentation.play(player, newValue ? "mob-toggle.enabled" : "mob-toggle.disabled");
     }
 
-    private void fillBackground(Player player, Inventory inventory) {
-        ConfigurationSection fillerSection = guiConfig.getConfigurationSection("filler");
-        Material fillerMaterial = fillerSection == null ? Material.GRAY_STAINED_GLASS_PANE
-                : Material.matchMaterial(fillerSection.getString("material", "GRAY_STAINED_GLASS_PANE"));
-        if (fillerMaterial == null || !fillerMaterial.isItem()) {
-            fillerMaterial = Material.GRAY_STAINED_GLASS_PANE;
+    private PublicGuiRenderInput renderInput(Player player) {
+        Map<ToggleCategory, Boolean> effective = new EnumMap<>(ToggleCategory.class);
+        Map<ToggleCategory, Boolean> stored = new EnumMap<>(ToggleCategory.class);
+        Map<ToggleCategory, Boolean> locked = new EnumMap<>(ToggleCategory.class);
+        PlayerSettings saved = playerSettingsManager.get(player.getUniqueId());
+        for (ToggleCategory category : ToggleCategory.values()) {
+            effective.put(category, spawnPolicyService.isEffectiveCategoryEnabled(player, category));
+            stored.put(category, saved.isEnabled(category));
+            locked.put(category, player.isPermissionSet(category.getPermission()));
         }
-        String fillerName = fillerSection == null ? " " : fillerSection.getString("name", " ");
-        List<String> fillerLore = fillerSection == null ? List.of() : fillerSection.getStringList("lore");
-        Integer fillerModel = fillerSection == null ? null
-                : GuiItemConfig.parseCustomModelData(fillerSection.get("custom-model-data"), null);
-        ItemStack filler = GuiItems.create(player, fillerMaterial,
-                messages.renderTemplateForViewer(player, fillerName, Map.of()),
-                fillerLore.stream().map(line -> messages.renderTemplateForViewer(player, line, Map.of())).toList(),
-                false, 1, fillerModel);
-        for (int slot = 0; slot < SIZE; slot++) {
-            inventory.setItem(slot, filler.clone());
-        }
+        return renderInput(presentation, effective, stored, locked);
     }
 
-    private ItemStack createToggleItem(Player player, ToggleCategory category) {
-        boolean effectiveEnabled = spawnPolicyService.isEffectiveCategoryEnabled(player, category);
-        boolean savedEnabled = playerSettingsManager.get(player.getUniqueId()).isEnabled(category);
-        boolean locked = player.isPermissionSet(category.getPermission());
-
-        String materialName = guiConfig.getString("items." + category.getConfigKey() + ".material",
-                category.getDefaultMaterial());
-        Material material = Material.matchMaterial(materialName);
-        if (material == null || !material.isItem()) {
-            material = Material.LEVER;
+    static PublicGuiRenderInput renderInput(PublicPresentation presentation,
+                                           Map<ToggleCategory, Boolean> effective,
+                                           Map<ToggleCategory, Boolean> stored,
+                                           Map<ToggleCategory, Boolean> locked) {
+        Map<String, String> values = new HashMap<>();
+        for (String style : Set.of("theme", "muted", "white", "yellow", "good", "bad")) {
+            values.put("gui_" + style, presentation.renderTemplate("{" + style + "}", Map.of()));
         }
-
-        String statePath = effectiveEnabled ? "messages.state.enabled" : "messages.state.disabled";
-        String displayTemplate = category.getDisplayName(guiConfig)
-                .replace("{state_color}", effectiveEnabled ? "{good}" : "{bad}");
-        String displayName = messages.renderTemplateForViewer(player, displayTemplate, Map.of());
-
-        List<String> lore = new ArrayList<>();
-        ConfigurationSection section = guiConfig.getConfigurationSection("items." + category.getConfigKey());
-        if (section != null) {
-            String stateText = messages.renderTemplateForViewer(player,
-                    messages.config().getString(statePath,
-                            effectiveEnabled ? "{good}Enabled" : "{bad}Disabled"), Map.of());
-            String savedStateText = messages.renderTemplateForViewer(player,
-                    messages.config().getString(savedEnabled ? "messages.state.enabled" : "messages.state.disabled",
-                            savedEnabled ? "{good}Enabled" : "{bad}Disabled"), Map.of());
-            String permissionModeText = messages.renderTemplateForViewer(player,
-                    messages.config().getString(locked ? "messages.permission-mode.locked" : "messages.permission-mode.gui",
-                            locked ? "{bad}Permission override" : "{good}GUI toggle"), Map.of());
-            for (String line : section.getStringList("lore")) {
-                lore.add(messages.renderTemplateForViewer(player, line
-                        .replace("{state}", stateText)
-                        .replace("{saved_state}", savedStateText)
-                        .replace("{permission_mode}", permissionModeText), Map.of()));
-            }
+        for (ToggleCategory category : ToggleCategory.values()) {
+            String prefix = category.getConfigKey() + "_";
+            values.put(prefix + "state_color", values.get(effective.get(category) ? "gui_good" : "gui_bad"));
+            values.put(prefix + "state", guiState(presentation, effective.get(category)));
+            values.put(prefix + "saved_state", guiState(presentation, stored.get(category)));
+            values.put(prefix + "permission_mode", presentation.render(locked.get(category)
+                    ? "messages.gui-labels.permission-mode.locked"
+                    : "messages.gui-labels.permission-mode.gui"));
         }
-        Integer customModelData = section == null ? null
-                : GuiItemConfig.parseCustomModelData(section.get("custom-model-data"), null);
-        return GuiItems.create(player, material, displayName, lore, false, 1, customModelData);
+        return new PublicGuiRenderInput(values, Map.of(), Map.of(), Map.of());
     }
 
+    private static String guiState(PublicPresentation presentation, boolean enabled) {
+        return presentation.render(enabled
+                ? "messages.gui-labels.state.enabled" : "messages.gui-labels.state.disabled");
+    }
+
+    @Override
+    public void close() {
+        guis.close();
+    }
 }
