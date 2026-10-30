@@ -127,4 +127,33 @@ The event runs in that same caller context; listeners must follow the server's e
 FoMobToggle does not move calls across threads. A first state lookup may read SQLite, so avoid repeatedly querying
 uncached players on a hot path.
 
+### Event listener example
+
+Inside a Bukkit `Listener` registered by your plugin (import this event class, `org.bukkit.event.EventHandler`, and `org.bukkit.Bukkit` where used):
+
+```java
+@EventHandler
+public void onMobTogglePreferenceChanged(MobTogglePreferenceChangedEvent event) {
+    Bukkit.getLogger().info("Mob setting: " + event.getCategory() + " -> " + event.getNewPreference());
+}
+```
+
+### Complete public API method index
+
+Signatures use short type names; import Fo types from this plugin's `api` package and Bukkit types from Bukkit.
+
+#### `FoMobToggleApi`
+
+```java
+ToggleState getState(Player, me.foesio.foMobToggle.model.ToggleCategory);
+SetPreferenceResult setPreference(Player, me.foesio.foMobToggle.model.ToggleCategory, boolean);
+SpawnDecision evaluateSpawn(Location, EntityType, event.entity.CreatureSpawnEvent.SpawnReason);
+```
+
+**Other public contract types:** `SetPreferenceResult`, `SpawnDecision`, `ToggleState`.
+
+### Complete Bukkit event index
+
+- `MobTogglePreferenceChangedEvent`.
+
 </details>
