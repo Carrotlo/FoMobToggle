@@ -20,7 +20,7 @@ messages:
   editor-setting-saved: "{prefix}:emerald: {good}Saved {theme}{setting}{good}."
   editor-setting-failed: "{prefix}:redstone: {bad}Could not save {theme}{setting}{bad}. {muted}{error}"
   editor-invalid-radius: "{prefix}{bad}Radius must be a number from {theme}{min}{bad} to {theme}{max}{bad}."
-  gui-disabled: "{prefix}{muted}The GUI is disabled. {theme}Only permission nodes are active."
+  gui-disabled: "{prefix}{muted}The GUI is disabled. {theme}Saved toggles and permission overrides remain active."
   gui-unavailable: "{prefix}{bad}The mob toggle menu is unavailable."
   locked-by-permission: "{prefix}{bad}This toggle is locked by your permissions."
   toggle-updated: "{prefix}{muted}Updated {toggle}{muted} to {state}{muted}."

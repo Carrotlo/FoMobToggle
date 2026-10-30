@@ -13,10 +13,12 @@ import me.foesio.core.gui.publicgui.PublicGuiRenderInput;
 import me.foesio.core.gui.publicgui.PublicGuiService;
 import me.foesio.core.gui.publicgui.PublicGuiText;
 import me.foesio.foMobToggle.FoMobToggle;
+import me.foesio.foMobToggle.api.SetPreferenceResult;
 import me.foesio.foMobToggle.data.PlayerSettings;
 import me.foesio.foMobToggle.data.PlayerSettingsManager;
 import me.foesio.foMobToggle.model.ToggleCategory;
 import me.foesio.foMobToggle.service.SpawnPolicyService;
+import me.foesio.foMobToggle.service.FoMobToggleApiService;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
@@ -37,15 +39,17 @@ public final class ToggleMenu implements AutoCloseable {
     private final PublicPresentation presentation;
     private final PlayerSettingsManager playerSettingsManager;
     private final SpawnPolicyService spawnPolicyService;
+    private final FoMobToggleApiService apiService;
     private final PublicGuiService guis;
     private final boolean migrationReady;
 
     public ToggleMenu(FoMobToggle plugin, PublicPresentation presentation,
                       PlayerSettingsManager playerSettingsManager, SpawnPolicyService spawnPolicyService,
-                      File guiFile, boolean migrationReady) {
+                      FoMobToggleApiService apiService, File guiFile, boolean migrationReady) {
         this.presentation = presentation;
         this.playerSettingsManager = playerSettingsManager;
         this.spawnPolicyService = spawnPolicyService;
+        this.apiService = apiService;
         this.migrationReady = migrationReady;
         this.guis = new PublicGuiService(plugin)
                 .menu(MENU_ID, guiFile.toPath(), CONTRACT)
@@ -105,7 +109,15 @@ public final class ToggleMenu implements AutoCloseable {
         }
         PlayerSettings settings = playerSettingsManager.get(player.getUniqueId());
         boolean newValue = !settings.isEnabled(category);
-        playerSettingsManager.set(player.getUniqueId(), category, newValue);
+        SetPreferenceResult result = apiService.setPreferenceFromMenu(player, category, newValue);
+        if (result == SetPreferenceResult.LOCKED) {
+            presentation.send(player, "messages.locked-by-permission");
+            presentation.play(player, "gui.error");
+            return;
+        }
+        if (result != SetPreferenceResult.CHANGED) {
+            return;
+        }
         PublicGuiRenderInput input = renderInput(player);
         guis.openEntryPoint(player, ENTRY_POINT, input);
         PublicGuiDefinition.Button button = guis.snapshot().require(MENU_ID).buttons().get(category.getConfigKey());

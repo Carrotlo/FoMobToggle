@@ -9,7 +9,7 @@
 #
 # GUI disabled:
 # - When gui.enabled is false, /fomobtoggle only shows a message.
-# - In that mode the plugin still blocks natural spawns by permission nodes.
+# - Saved preferences and permission overrides still control natural spawns.
 #
 # Performance:
 # - The plugin is event-driven.

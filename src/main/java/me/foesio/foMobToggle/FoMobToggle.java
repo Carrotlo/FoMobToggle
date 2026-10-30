@@ -26,6 +26,7 @@ import me.foesio.core.sound.FoEditorSounds;
 import me.foesio.core.sound.FoSoundService;
 import me.foesio.core.update.UpdateNoticeService;
 import me.foesio.foMobToggle.command.FoMobToggleCommand;
+import me.foesio.foMobToggle.api.FoMobToggleApi;
 import me.foesio.foMobToggle.data.PlayerSettingsManager;
 import me.foesio.foMobToggle.editor.FoMobToggleEditor;
 import me.foesio.foMobToggle.gui.ToggleMenu;
@@ -36,11 +37,13 @@ import me.foesio.foMobToggle.gui.OwnerResourceFiles;
 import me.foesio.foMobToggle.listener.PlayerDataListener;
 import me.foesio.foMobToggle.listener.SpawnListener;
 import me.foesio.foMobToggle.service.SpawnPolicyService;
+import me.foesio.foMobToggle.service.FoMobToggleApiService;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.ServicePriority;
 
 public final class FoMobToggle extends JavaPlugin {
 
@@ -52,6 +55,7 @@ public final class FoMobToggle extends JavaPlugin {
     private ToggleMenu toggleMenu;
     private FoMessageService messages;
     private SpawnPolicyService spawnPolicyService;
+    private FoMobToggleApiService apiService;
     private FoCoreContext core;
     private FoSoundService sounds;
     private FoAdminSounds adminSounds;
@@ -121,8 +125,9 @@ public final class FoMobToggle extends JavaPlugin {
         this.updateNotices = core.createUpdateNotices(messages, "fomobtoggle", adminSounds).start();
         this.playerSettingsManager = new PlayerSettingsManager(this, userDataFolder, core);
         this.spawnPolicyService = new SpawnPolicyService(this, playerSettingsManager);
+        this.apiService = new FoMobToggleApiService(this, playerSettingsManager, spawnPolicyService);
         this.toggleMenu = new ToggleMenu(this, presentation, playerSettingsManager,
-                spawnPolicyService, guiFile, publicGuiReady);
+                spawnPolicyService, apiService, guiFile, publicGuiReady);
         this.editor = new FoMobToggleEditor(this, core, messages);
         this.reloads = FoReloadRegistry.create()
                 .addConfig(this)
@@ -164,10 +169,16 @@ public final class FoMobToggle extends JavaPlugin {
         getServer().getPluginManager().registerEvents(editor, this);
         getServer().getPluginManager().registerEvents(new PlayerDataListener(playerSettingsManager), this);
         getServer().getPluginManager().registerEvents(new SpawnListener(this, spawnPolicyService), this);
+        getServer().getServicesManager().register(FoMobToggleApi.class, apiService, this, ServicePriority.Normal);
     }
 
     @Override
     public void onDisable() {
+        if (apiService != null) {
+            getServer().getServicesManager().unregister(FoMobToggleApi.class, apiService);
+            apiService.close();
+            apiService = null;
+        }
         if (toggleMenu != null) {
             toggleMenu.close();
             toggleMenu = null;

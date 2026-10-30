@@ -74,9 +74,17 @@ public final class PlayerSettingsManager implements AutoCloseable {
     }
 
     public synchronized void set(UUID uuid, ToggleCategory category, boolean enabled) {
+        setIfChanged(uuid, category, enabled);
+    }
+
+    public synchronized boolean setIfChanged(UUID uuid, ToggleCategory category, boolean enabled) {
         PlayerSettings settings = get(uuid);
+        if (settings.isEnabled(category) == enabled) {
+            return false;
+        }
         settings.setEnabled(category, enabled);
         writes.markDirty(uuid);
+        return true;
     }
 
     public synchronized void save(UUID uuid) {
